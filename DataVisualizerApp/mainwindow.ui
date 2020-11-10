@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>586</width>
-    <height>373</height>
+    <width>671</width>
+    <height>378</height>
    </rect>
   </property>
   <property name="font">
@@ -34,6 +34,9 @@
            <height>0</height>
           </size>
          </property>
+         <property name="text">
+          <string>lcubrilo01@gmail.com</string>
+         </property>
          <property name="placeholderText">
           <string>Email</string>
          </property>
@@ -46,6 +49,9 @@
            <width>300</width>
            <height>0</height>
           </size>
+         </property>
+         <property name="text">
+          <string>FHp4LwCzGNXchS2</string>
          </property>
          <property name="placeholderText">
           <string>Password</string>
@@ -92,11 +98,28 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
-        <widget class="QComboBox" name="deviceCombo">
-         <property name="placeholderText">
-          <string>Choose a device</string>
-         </property>
-        </widget>
+        <layout class="QHBoxLayout" name="horizontalLayout_4">
+         <item>
+          <widget class="QPushButton" name="refreshButton">
+           <property name="maximumSize">
+            <size>
+             <width>64</width>
+             <height>64</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>↻</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="deviceCombo">
+           <property name="placeholderText">
+            <string>Choose a device</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item>
         <widget class="QCheckBox" name="isOnline">
@@ -121,7 +144,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QLCDNumber" name="lcdNumber">
+          <widget class="QLCDNumber" name="lcdTemp">
            <property name="minimumSize">
             <size>
              <width>100</width>
@@ -159,7 +182,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QLCDNumber" name="lcdNumber_2">
+          <widget class="QLCDNumber" name="lcdPres">
            <property name="minimumSize">
             <size>
              <width>100</width>
@@ -192,7 +215,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QLCDNumber" name="lcdNumber_3">
+          <widget class="QLCDNumber" name="lcdHumi">
            <property name="minimumSize">
             <size>
              <width>100</width>
@@ -219,7 +242,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>586</width>
+     <width>671</width>
      <height>43</height>
     </rect>
    </property>
