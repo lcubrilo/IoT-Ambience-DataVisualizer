@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>671</width>
-    <height>378</height>
+    <width>757</width>
+    <height>539</height>
    </rect>
   </property>
   <property name="font">
@@ -23,7 +23,7 @@
     <item row="0" column="0">
      <widget class="QGroupBox" name="credGroup">
       <property name="title">
-       <string>Credentials</string>
+       <string>Wolk Credentials</string>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
@@ -53,42 +53,18 @@
          <property name="text">
           <string>FHp4LwCzGNXchS2</string>
          </property>
+         <property name="echoMode">
+          <enum>QLineEdit::Password</enum>
+         </property>
          <property name="placeholderText">
           <string>Password</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <spacer name="horizontalSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item>
-        <widget class="QPushButton" name="pushButton">
-         <property name="text">
-          <string>Connect</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="isConnected">
-         <property name="text">
-          <string>Connected to Wolk</string>
          </property>
         </widget>
        </item>
       </layout>
      </widget>
     </item>
-    <item row="0" column="1">
+    <item row="0" column="1" rowspan="2">
      <widget class="QGroupBox" name="sensGroup">
       <property name="enabled">
        <bool>false</bool>
@@ -98,48 +74,128 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <widget class="QGroupBox" name="deviceGroup">
+         <property name="title">
+          <string>Devices</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_4">
+            <item>
+             <widget class="QPushButton" name="refreshButton">
+              <property name="maximumSize">
+               <size>
+                <width>64</width>
+                <height>64</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>↻</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="deviceCombo">
+              <property name="currentText">
+               <string>Scan for devices</string>
+              </property>
+              <property name="placeholderText">
+               <string>Scan for devices</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QProgressBar" name="progressBar">
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>10</height>
+             </size>
+            </property>
+            <property name="value">
+             <number>0</number>
+            </property>
+            <property name="textVisible">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="isConnected">
+            <property name="focusPolicy">
+             <enum>Qt::NoFocus</enum>
+            </property>
+            <property name="text">
+             <string>The device is online</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_6">
          <item>
-          <widget class="QPushButton" name="refreshButton">
-           <property name="maximumSize">
-            <size>
-             <width>64</width>
-             <height>64</height>
-            </size>
-           </property>
+          <widget class="QLabel" name="label_5">
            <property name="text">
-            <string>↻</string>
+            <string>Attribute</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QComboBox" name="deviceCombo">
-           <property name="placeholderText">
-            <string>Choose a device</string>
+          <widget class="QLabel" name="label_4">
+           <property name="text">
+            <string>Value</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_6">
+           <property name="minimumSize">
+            <size>
+             <width>64</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Unit</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
            </property>
           </widget>
          </item>
         </layout>
        </item>
        <item>
-        <widget class="QCheckBox" name="isOnline">
-         <property name="text">
-          <string>Device is online</string>
-         </property>
-        </widget>
-       </item>
-       <item>
         <layout class="QHBoxLayout" name="horizontalLayout">
          <item>
           <widget class="QLabel" name="label">
+           <property name="minimumSize">
+            <size>
+             <width>100</width>
+             <height>0</height>
+            </size>
+           </property>
            <property name="maximumSize">
             <size>
-             <width>60</width>
+             <width>16777215</width>
              <height>16777215</height>
             </size>
            </property>
            <property name="text">
-            <string>T</string>
+            <string>Temp.</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
            </property>
           </widget>
          </item>
@@ -147,8 +203,8 @@
           <widget class="QLCDNumber" name="lcdTemp">
            <property name="minimumSize">
             <size>
-             <width>100</width>
-             <height>0</height>
+             <width>200</width>
+             <height>48</height>
             </size>
            </property>
            <property name="maximumSize">
@@ -162,6 +218,40 @@
              <pointsize>16</pointsize>
             </font>
            </property>
+           <property name="digitCount">
+            <number>10</number>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="tempCombo">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>64</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <item>
+            <property name="text">
+             <string>°C</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>K</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>F</string>
+            </property>
+           </item>
           </widget>
          </item>
         </layout>
@@ -170,19 +260,6 @@
         <layout class="QHBoxLayout" name="horizontalLayout_2">
          <item>
           <widget class="QLabel" name="label_2">
-           <property name="maximumSize">
-            <size>
-             <width>60</width>
-             <height>16777215</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>P</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLCDNumber" name="lcdPres">
            <property name="minimumSize">
             <size>
              <width>100</width>
@@ -191,10 +268,65 @@
            </property>
            <property name="maximumSize">
             <size>
+             <width>16777215</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Press.</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLCDNumber" name="lcdPres">
+           <property name="minimumSize">
+            <size>
+             <width>200</width>
+             <height>48</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
              <width>400</width>
              <height>16777215</height>
             </size>
            </property>
+           <property name="digitCount">
+            <number>10</number>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="presCombo">
+           <property name="maximumSize">
+            <size>
+             <width>64</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <item>
+            <property name="text">
+             <string>mbar</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>hPa</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>kPa</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>psi</string>
+            </property>
+           </item>
           </widget>
          </item>
         </layout>
@@ -203,19 +335,6 @@
         <layout class="QHBoxLayout" name="horizontalLayout_3">
          <item>
           <widget class="QLabel" name="label_3">
-           <property name="maximumSize">
-            <size>
-             <width>60</width>
-             <height>16777215</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>H</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLCDNumber" name="lcdHumi">
            <property name="minimumSize">
             <size>
              <width>100</width>
@@ -224,15 +343,68 @@
            </property>
            <property name="maximumSize">
             <size>
+             <width>16777215</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Humid.</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLCDNumber" name="lcdHumi">
+           <property name="minimumSize">
+            <size>
+             <width>200</width>
+             <height>48</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
              <width>400</width>
              <height>16777215</height>
             </size>
            </property>
+           <property name="digitCount">
+            <number>10</number>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="humiCombo">
+           <property name="maximumSize">
+            <size>
+             <width>64</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <item>
+            <property name="text">
+             <string>%</string>
+            </property>
+           </item>
           </widget>
          </item>
         </layout>
        </item>
       </layout>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QPushButton" name="pushButton">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>128</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Log in</string>
+      </property>
      </widget>
     </item>
    </layout>
@@ -242,7 +414,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>671</width>
+     <width>757</width>
      <height>43</height>
     </rect>
    </property>

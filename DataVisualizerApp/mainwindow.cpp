@@ -5,36 +5,29 @@ QString email;
 QString pass;
 MainWindow* prozor;
 QString token;
+QTimer* timer;
+int numberOfTimeouts;
+double temperature, pressure, humidity;
 
-class device
+void startProgress()
 {
-    QString deviceName;
-    QString pressure;
-    QString temperature;
-    QString humidity;
+    numberOfTimeouts = 0;
+    timer->start(1000);
+    prozor->ui->progressBar->setValue(5);
+}
+void updateProgress()
+{
+    timer->start(50);
+    numberOfTimeouts++;
+    int x = 5*log(numberOfTimeouts);
+    prozor->ui->progressBar->setValue(x);
+}
+void endProgress()
+{
+    timer->stop();
+    prozor->ui->progressBar->setValue(100);
+}
 
-    device()
-    {
-        deviceName = "";
-        pressure = "";
-        temperature = "";
-        humidity = "";
-    }
-    bool isEmpty()
-    {
-        return deviceName == "" &&
-        pressure == "" &&
-        temperature == "" &&
-        humidity == "";
-    }
-    bool isFull()
-    {
-        return deviceName != "" &&
-        pressure != "" &&
-        temperature != "" &&
-        humidity != "";
-    }
-};
 
 QString parseValue(std::string json, std::string lookingFor, int from = 0)
 {
@@ -56,7 +49,7 @@ int locateValue(std::string json, std::string lookingFor, int from = 0)
 {
     return json.find(lookingFor, from) + lookingFor.length() + 3;
 }
-QString getSensorValue(std::string json, QString sensor, QString device)
+QString getSensorValue(std::string json, QString sensor, QString device, std::string thing = "value")
 {
     int iterator = 0;
     QString tmpSensor, tmpDevice, value;
@@ -73,7 +66,11 @@ QString getSensorValue(std::string json, QString sensor, QString device)
 
     }while(tmpDevice!=device);
 
-    return parseValue(json, "value", iterator);
+    return parseValue(json, thing, iterator);
+}
+bool deviceOnline(std::string json, QString sensor, QString device)
+{
+    return getSensorValue(json, sensor, device, "connected") == "rue";
 }
 
 size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
@@ -106,8 +103,47 @@ std::string get(char* url)
 
     return received;
 }
+void displayValues()
+{
+    int adjustedTemp, adjustedPres, adjustedHumi;
+
+    QString tempUnit = prozor->ui->tempCombo->currentText();
+    qDebug() << tempUnit;
+    if(tempUnit == "°C")
+        adjustedTemp = (int)temperature;
+    else if(tempUnit == "K")
+        adjustedTemp = (int)temperature + 273;
+    else if(tempUnit == "F")
+        adjustedTemp =  (int)(temperature * 1.8) + 32;
+
+    QString presUnit = prozor->ui->presCombo->currentText();
+    qDebug() << presUnit;
+    if(presUnit == "mbar"||presUnit=="hPa")
+        adjustedPres = (int)pressure;
+    else if(presUnit == "kPa")
+        adjustedPres = (int)(pressure/10);
+    else if(presUnit == "psi")
+        adjustedPres =  (int)(pressure*0.0145037738);
+
+    QString humiUnit = prozor->ui->humiCombo->currentText();
+    qDebug() << humiUnit;
+    if(humiUnit == "%")
+        adjustedHumi = (int)humidity;
+
+    prozor->ui->lcdTemp->display(adjustedTemp);
+    prozor->ui->lcdPres->display(adjustedPres);
+    prozor->ui->lcdHumi->display(adjustedHumi);
+    prozor->ui->isConnected->setChecked(true);
+}
 void getDevices()
 {
+    startProgress();
+    prozor->ui->isConnected->setEnabled(false);
+    prozor->ui->lcdTemp->display("");
+    prozor->ui->lcdPres->display("");
+    prozor->ui->lcdHumi->display("");
+
+    prozor->ui->deviceCombo->setPlaceholderText("Click to see devices");
     std::string url = "https://api-demo.wolkabout.com/api/devices/";
     std::string received =  get(&url[0]);
 
@@ -126,6 +162,7 @@ void getDevices()
             prozor->ui->deviceCombo->addItem(deviceName);
     }
     while(!deviceName.contains(":"));
+    endProgress();
 }
 void getSensors()
 {
@@ -134,22 +171,37 @@ void getSensors()
 
     QString device = prozor->ui->deviceCombo->currentText();
 
-    QString temperature = getSensorValue(received, "Thermometer", device);
-    prozor->ui->lcdTemp->display(temperature);
-    qDebug() << temperature;
+    temperature = getSensorValue(received, "Thermometer", device).toDouble();
+    pressure = getSensorValue(received, "Barometer", device).toDouble();
+    humidity = getSensorValue(received, "Hygrometer", device).toDouble();
 
-    QString pressure = getSensorValue(received, "Barometer", device);
-    prozor->ui->lcdPres->display(pressure);
-    qDebug() << pressure;
+    prozor->ui->isConnected->setEnabled(deviceOnline(received, "Thermometer", device));
 
-    QString humidity = getSensorValue(received, "Hygrometer", device);
-    prozor->ui->lcdHumi->display(humidity);
-    qDebug() << humidity;
+    qDebug() << temperature << " " << pressure << " " << humidity;
+    prozor->ui->humiCombo->setEnabled(true);
+    prozor->ui->presCombo->setEnabled(true);
+    prozor->ui->tempCombo->setEnabled(true);
 
+    displayValues();
+}
+bool isfMail(QString maybeEmail)
+{
+    QRegExp mailREX("\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,4}\\b");
+    mailREX.setCaseSensitivity(Qt::CaseInsensitive);
+    mailREX.setPatternSyntax(QRegExp::RegExp);
+    return mailREX.exactMatch(maybeEmail);
 }
 void loginWolk()
 {
     prozor->ui->isConnected->setChecked(false);
+    QString email = prozor->ui->emailLine->text();
+    if(!isfMail(email))
+    {
+        QMessageBox Msgbox;
+        Msgbox.setText(email + " is not a valid email address.");
+        Msgbox.exec();
+        return;
+    }
     CURL* c = curl_easy_init();
     //URL, request type
     curl_easy_setopt(c, CURLOPT_URL, "https://api-demo.wolkabout.com/api/emailSignIn/");
@@ -157,7 +209,7 @@ void loginWolk()
 
     //body; string -> object -> document -> json
     QJsonObject obj;
-    obj.insert("username", prozor->ui->emailLine->text());//"lcubrilo01@gmail.com");
+    obj.insert("username", email);//"lcubrilo01@gmail.com");
     obj.insert("password", prozor->ui->passLine->text());//"FHp4LwCzGNXchS2");
     QJsonDocument doc(obj);
     std::string jsonString = doc.toJson(QJsonDocument::Compact).toStdString();
@@ -179,39 +231,58 @@ void loginWolk()
     //parse token out of response
     QString str = parseValue(received, "accessToken", 0);
     if(str!="")
-     {
-        prozor->ui->isConnected->setChecked(true);
+    {
         prozor->ui->sensGroup->setEnabled(true);
+        prozor->ui->humiCombo->setEnabled(false);
+        prozor->ui->presCombo->setEnabled(false);
+        prozor->ui->tempCombo->setEnabled(false);
+        prozor->ui->credGroup->setEnabled(false);
+        prozor->ui->pushButton->setText("Log out");
     }
+
     curl_easy_cleanup(c);
     token = str;
 }
-void updateEmail()
+void logoutWolk()
 {
-    email = prozor->ui->emailLine->text();
+    prozor->ui->sensGroup->setEnabled(false);
+    prozor->ui->credGroup->setEnabled(true);
+    prozor->ui->pushButton->setText("Log in");
+    prozor->ui->emailLine->setText("");
+    prozor->ui->passLine->setText("");
 }
-void updatePass()
+void logWolk()
 {
-    pass = prozor->ui->passLine->text();
+    if(prozor->ui->pushButton->text() == "Log in")
+        loginWolk();
+    else
+        logoutWolk();
 }
+void connections()
+{
+    Ui::MainWindow* ui = prozor->ui;
+    prozor->connect(ui->pushButton, &QPushButton::clicked, logWolk);
 
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+    prozor->connect(ui->refreshButton, &QPushButton::clicked, getDevices);
+    prozor->connect(ui->deviceCombo, &QComboBox::currentTextChanged, getSensors);
+
+    prozor->connect(ui->tempCombo, &QComboBox::currentTextChanged, displayValues);
+    prozor->connect(ui->presCombo, &QComboBox::currentTextChanged, displayValues);
+    prozor->connect(ui->humiCombo, &QComboBox::currentTextChanged, displayValues);
+
+    prozor->connect(timer, &QTimer::timeout, updateProgress);
+}
+MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWindow)
 {
+    timer = new QTimer(this);
     ui->setupUi(this);
+
+    //Checkmark settings
     this->ui->isConnected->setAttribute(Qt::WA_TransparentForMouseEvents);
     this->ui->isConnected->setFocusPolicy(Qt::NoFocus);
+
     prozor = this;
-
-    connect(ui->pushButton, &QPushButton::clicked, loginWolk);
-    connect(ui->emailLine, &QLineEdit::textChanged, updateEmail);
-    connect(ui->passLine, &QLineEdit::textChanged, updatePass);
-
-    connect(ui->refreshButton, &QPushButton::clicked, getDevices);
-    connect(ui->deviceCombo, &QComboBox::currentTextChanged, getSensors);//  highlighted
-    //connect(ui->deviceCombo, &QComboBox::currentTextChanged, getDevice);
-
+    connections();
 }
 
 MainWindow::~MainWindow()
