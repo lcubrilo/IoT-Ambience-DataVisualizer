@@ -1,34 +1,35 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 //FHp4LwCzGNXchS2
-QString email;
-QString pass;
-MainWindow* prozor;
-QString token;
-QTimer* timer;
-int numberOfTimeouts;
-double temperature, pressure, humidity;
 
+MainWindow* prozor;
+
+//Timers
+void getSensors();
+QTimer* timer;
 void startProgress()
 {
-    numberOfTimeouts = 0;
-    timer->start(1000);
+    timer->start(600);
     prozor->ui->progressBar->setValue(5);
+    prozor->ui->progressLabel->setText("Updated values!");
 }
 void updateProgress()
 {
-    timer->start(50);
-    numberOfTimeouts++;
-    int x = 5*log(numberOfTimeouts);
-    prozor->ui->progressBar->setValue(x);
-}
-void endProgress()
-{
-    timer->stop();
-    prozor->ui->progressBar->setValue(100);
+    timer->start(600);
+    int x = prozor->ui->progressBar->value();
+    if(x>10)
+        //prozor->ui->progressLabel->setText("Updating values...");
+        prozor->ui->progressLabel->setText("...");
+    if(x>99)
+    {
+        timer->stop();
+        getSensors();
+        return;
+    }
+    prozor->ui->progressBar->setValue(++x);
 }
 
-
+//JSON Manipulations
 QString parseValue(std::string json, std::string lookingFor, int from = 0)
 {
     int start = json.find(lookingFor, from) + lookingFor.length() + 3;
@@ -68,11 +69,10 @@ QString getSensorValue(std::string json, QString sensor, QString device, std::st
 
     return parseValue(json, thing, iterator);
 }
-bool deviceOnline(std::string json, QString sensor, QString device)
-{
-    return getSensorValue(json, sensor, device, "connected") == "rue";
-}
 
+//curl helpers
+QString token;
+double temperature, pressure, humidity;
 size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
     ((std::string*)userp)->append((char*)contents, size * nmemb);
@@ -103,87 +103,8 @@ std::string get(char* url)
 
     return received;
 }
-void displayValues()
-{
-    int adjustedTemp, adjustedPres, adjustedHumi;
 
-    QString tempUnit = prozor->ui->tempCombo->currentText();
-    qDebug() << tempUnit;
-    if(tempUnit == "°C")
-        adjustedTemp = (int)temperature;
-    else if(tempUnit == "K")
-        adjustedTemp = (int)temperature + 273;
-    else if(tempUnit == "F")
-        adjustedTemp =  (int)(temperature * 1.8) + 32;
-
-    QString presUnit = prozor->ui->presCombo->currentText();
-    qDebug() << presUnit;
-    if(presUnit == "mbar"||presUnit=="hPa")
-        adjustedPres = (int)pressure;
-    else if(presUnit == "kPa")
-        adjustedPres = (int)(pressure/10);
-    else if(presUnit == "psi")
-        adjustedPres =  (int)(pressure*0.0145037738);
-
-    QString humiUnit = prozor->ui->humiCombo->currentText();
-    qDebug() << humiUnit;
-    if(humiUnit == "%")
-        adjustedHumi = (int)humidity;
-
-    prozor->ui->lcdTemp->display(adjustedTemp);
-    prozor->ui->lcdPres->display(adjustedPres);
-    prozor->ui->lcdHumi->display(adjustedHumi);
-    prozor->ui->isConnected->setChecked(true);
-}
-void getDevices()
-{
-    startProgress();
-    prozor->ui->isConnected->setEnabled(false);
-    prozor->ui->lcdTemp->display("");
-    prozor->ui->lcdPres->display("");
-    prozor->ui->lcdHumi->display("");
-
-    prozor->ui->deviceCombo->setPlaceholderText("Click to see devices");
-    std::string url = "https://api-demo.wolkabout.com/api/devices/";
-    std::string received =  get(&url[0]);
-
-    //parse device name out of response
-    QString deviceName;
-    int deviceLoc = 0;
-
-    do
-    {
-        deviceName = parseValue(received, "deviceName", deviceLoc);
-        deviceLoc = locateValue(received, "deviceName", deviceLoc) + 1; //iterate
-
-        if(deviceName.contains(":")) //there must be none of :
-            break;
-        else if(prozor->ui->deviceCombo->findText(deviceName)==-1) //if its not in the list
-            prozor->ui->deviceCombo->addItem(deviceName);
-    }
-    while(!deviceName.contains(":"));
-    endProgress();
-}
-void getSensors()
-{
-    std::string url = "https://api-demo.wolkabout.com/api/deviceSensors/";
-    std::string received = get(&url[0]);
-
-    QString device = prozor->ui->deviceCombo->currentText();
-
-    temperature = getSensorValue(received, "Thermometer", device).toDouble();
-    pressure = getSensorValue(received, "Barometer", device).toDouble();
-    humidity = getSensorValue(received, "Hygrometer", device).toDouble();
-
-    prozor->ui->isConnected->setEnabled(deviceOnline(received, "Thermometer", device));
-
-    qDebug() << temperature << " " << pressure << " " << humidity;
-    prozor->ui->humiCombo->setEnabled(true);
-    prozor->ui->presCombo->setEnabled(true);
-    prozor->ui->tempCombo->setEnabled(true);
-
-    displayValues();
-}
+//Login stuff
 bool isfMail(QString maybeEmail)
 {
     QRegExp mailREX("\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,4}\\b");
@@ -250,6 +171,7 @@ void logoutWolk()
     prozor->ui->pushButton->setText("Log in");
     prozor->ui->emailLine->setText("");
     prozor->ui->passLine->setText("");
+    prozor->ui->progressLabel->setText("");
 }
 void logWolk()
 {
@@ -258,19 +180,110 @@ void logWolk()
     else
         logoutWolk();
 }
+
+//Devices stuff
+void getDevices()
+{
+    startProgress();
+    prozor->ui->isConnected->setEnabled(false);
+    prozor->ui->lcdTemp->display("");
+    prozor->ui->lcdPres->display("");
+    prozor->ui->lcdHumi->display("");
+
+    prozor->ui->deviceCombo->setPlaceholderText("Click to see devices");
+    std::string url = "https://api-demo.wolkabout.com/api/devices/";
+    std::string received =  get(&url[0]);
+
+    //parse device name out of response
+    QString deviceName;
+    int deviceLoc = 0;
+
+    do
+    {
+        deviceName = parseValue(received, "deviceName", deviceLoc);
+        deviceLoc = locateValue(received, "deviceName", deviceLoc) + 1; //iterate
+
+        if(deviceName.contains(":")) //there must be none of :
+            break;
+        else if(prozor->ui->deviceCombo->findText(deviceName)==-1) //if its not in the list
+            prozor->ui->deviceCombo->addItem(deviceName);
+    }
+    while(!deviceName.contains(":"));
+}
+bool deviceOnline(std::string json, QString sensor, QString device)
+{
+    return getSensorValue(json, sensor, device, "connected") == "rue";
+}
+
+//Sensors stuff
+void displayValues()
+{
+    int adjustedTemp, adjustedPres, adjustedHumi;
+
+    QString tempUnit = prozor->ui->tempCombo->currentText();
+    qDebug() << tempUnit;
+    if(tempUnit == "°C")
+        adjustedTemp = (int)temperature;
+    else if(tempUnit == "K")
+        adjustedTemp = (int)temperature + 273;
+    else if(tempUnit == "F")
+        adjustedTemp =  (int)(temperature * 1.8) + 32;
+
+    QString presUnit = prozor->ui->presCombo->currentText();
+    qDebug() << presUnit;
+    if(presUnit == "mbar"||presUnit=="hPa")
+        adjustedPres = (int)pressure;
+    else if(presUnit == "kPa")
+        adjustedPres = (int)(pressure/10);
+    else if(presUnit == "psi")
+        adjustedPres =  (int)(pressure*0.0145037738);
+
+    QString humiUnit = prozor->ui->humiCombo->currentText();
+    qDebug() << humiUnit;
+    if(humiUnit == "%")
+        adjustedHumi = (int)humidity;
+
+    prozor->ui->lcdTemp->display(adjustedTemp);
+    prozor->ui->lcdPres->display(adjustedPres);
+    prozor->ui->lcdHumi->display(adjustedHumi);
+    prozor->ui->isConnected->setChecked(true);
+}
+void getSensors()
+{
+    startProgress();
+    std::string url = "https://api-demo.wolkabout.com/api/deviceSensors/";
+    std::string received = get(&url[0]);
+
+    QString device = prozor->ui->deviceCombo->currentText();
+
+    temperature = getSensorValue(received, "Thermometer", device).toDouble();
+    pressure = getSensorValue(received, "Barometer", device).toDouble();
+    humidity = getSensorValue(received, "Hygrometer", device).toDouble();
+
+    prozor->ui->isConnected->setEnabled(deviceOnline(received, "Thermometer", device));
+
+    qDebug() << temperature << " " << pressure << " " << humidity;
+    prozor->ui->humiCombo->setEnabled(true);
+    prozor->ui->presCombo->setEnabled(true);
+    prozor->ui->tempCombo->setEnabled(true);
+
+    displayValues();
+}
+
+//Qt stuff
 void connections()
 {
     Ui::MainWindow* ui = prozor->ui;
     prozor->connect(ui->pushButton, &QPushButton::clicked, logWolk);
 
-    prozor->connect(ui->refreshButton, &QPushButton::clicked, getDevices);
+    prozor->connect(ui->refreshDevicesButton, &QPushButton::clicked, getDevices);
     prozor->connect(ui->deviceCombo, &QComboBox::currentTextChanged, getSensors);
+    prozor->connect(ui->refreshSensorsButton, &QPushButton::clicked, getSensors);
+    prozor->connect(timer, &QTimer::timeout, updateProgress);
 
     prozor->connect(ui->tempCombo, &QComboBox::currentTextChanged, displayValues);
     prozor->connect(ui->presCombo, &QComboBox::currentTextChanged, displayValues);
     prozor->connect(ui->humiCombo, &QComboBox::currentTextChanged, displayValues);
-
-    prozor->connect(timer, &QTimer::timeout, updateProgress);
 }
 MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWindow)
 {
@@ -284,7 +297,6 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWin
     prozor = this;
     connections();
 }
-
 MainWindow::~MainWindow()
 {
     delete ui;
