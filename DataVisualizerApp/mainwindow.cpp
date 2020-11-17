@@ -9,24 +9,24 @@ void getSensors();
 QTimer* timer;
 void startProgress()
 {
-    timer->start(600);
-    prozor->ui->progressBar->setValue(5);
+    timer->start(500);
+    prozor->ui->progressBar->setValue(10);
     prozor->ui->progressLabel->setText("Updated values!");
 }
 void updateProgress()
 {
-    timer->start(600);
+    timer->start(500);
     int x = prozor->ui->progressBar->value();
     if(x>10)
         //prozor->ui->progressLabel->setText("Updating values...");
         prozor->ui->progressLabel->setText("...");
-    if(x>99)
+    if(x>90)
     {
         timer->stop();
         getSensors();
         return;
     }
-    prozor->ui->progressBar->setValue(++x);
+    prozor->ui->progressBar->setValue(x+10);
 }
 
 //JSON Manipulations
@@ -69,6 +69,16 @@ QString getSensorValue(std::string json, QString sensor, QString device, std::st
 
     return parseValue(json, thing, iterator);
 }
+std::string credentials2JSON()
+{
+    //body; string -> object -> document -> json
+    QJsonObject obj;
+    obj.insert("username", prozor->ui->emailLine->text());
+    obj.insert("password", prozor->ui->passLine->text());
+    QJsonDocument doc(obj);
+    std::string jsonString = doc.toJson(QJsonDocument::Compact).toStdString();
+    return jsonString;
+}
 
 //curl helpers
 QString token;
@@ -103,38 +113,14 @@ std::string get(char* url)
 
     return received;
 }
-
-//Login stuff
-bool isfMail(QString maybeEmail)
+std::string post(char* url, std::string body)
 {
-    QRegExp mailREX("\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,4}\\b");
-    mailREX.setCaseSensitivity(Qt::CaseInsensitive);
-    mailREX.setPatternSyntax(QRegExp::RegExp);
-    return mailREX.exactMatch(maybeEmail);
-}
-void loginWolk()
-{
-    prozor->ui->isConnected->setChecked(false);
-    QString email = prozor->ui->emailLine->text();
-    if(!isfMail(email))
-    {
-        QMessageBox Msgbox;
-        Msgbox.setText(email + " is not a valid email address.");
-        Msgbox.exec();
-        return;
-    }
     CURL* c = curl_easy_init();
     //URL, request type
-    curl_easy_setopt(c, CURLOPT_URL, "https://api-demo.wolkabout.com/api/emailSignIn/");
+    curl_easy_setopt(c, CURLOPT_URL, url);
     curl_easy_setopt(c, CURLOPT_CUSTOMREQUEST, "POST");
 
-    //body; string -> object -> document -> json
-    QJsonObject obj;
-    obj.insert("username", email);//"lcubrilo01@gmail.com");
-    obj.insert("password", prozor->ui->passLine->text());//"FHp4LwCzGNXchS2");
-    QJsonDocument doc(obj);
-    std::string jsonString = doc.toJson(QJsonDocument::Compact).toStdString();
-    curl_easy_setopt(c, CURLOPT_POSTFIELDS, jsonString.c_str());
+    curl_easy_setopt(c, CURLOPT_POSTFIELDS, body.c_str());
 
     //header
     struct curl_slist* header = NULL;
@@ -148,21 +134,53 @@ void loginWolk()
 
     //performing
     curl_easy_perform(c);
+    curl_easy_cleanup(c);
 
-    //parse token out of response
-    QString str = parseValue(received, "accessToken", 0);
-    if(str!="")
+    return received;
+}
+
+//Login stuff
+bool isMail(QString maybeEmail)
+{
+    QRegExp mailREX("\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,4}\\b");
+    mailREX.setCaseSensitivity(Qt::CaseInsensitive);
+    mailREX.setPatternSyntax(QRegExp::RegExp);
+    bool isOkay = mailREX.exactMatch(maybeEmail);
+
+    if(!isOkay)
     {
-        prozor->ui->sensGroup->setEnabled(true);
-        prozor->ui->humiCombo->setEnabled(false);
-        prozor->ui->presCombo->setEnabled(false);
-        prozor->ui->tempCombo->setEnabled(false);
-        prozor->ui->credGroup->setEnabled(false);
-        prozor->ui->pushButton->setText("Log out");
+        QMessageBox Msgbox;
+        Msgbox.setText(maybeEmail + " is not a valid email address.");
+        Msgbox.exec();
     }
 
-    curl_easy_cleanup(c);
-    token = str;
+    return isOkay;
+}
+void loginWolk()
+{
+    prozor->ui->isConnected->setChecked(false);
+    //Check if mail is real
+    if(!isMail(prozor->ui->emailLine->text()))
+        return;
+
+    //Prepare http post request
+    std::string url = "https://api-demo.wolkabout.com/api/emailSignIn/";
+    std::string body = credentials2JSON();
+
+    std::string received = post(&url[0], body);
+
+    //parse token out of response
+    QString parsedToken = parseValue(received, "accessToken", 0);
+    if(parsedToken=="")
+        return;
+
+    token = parsedToken;
+    prozor->ui->sensGroup->setEnabled(true);
+    prozor->ui->humiCombo->setEnabled(false);
+    prozor->ui->presCombo->setEnabled(false);
+    prozor->ui->tempCombo->setEnabled(false);
+    prozor->ui->credGroup->setEnabled(false);
+    prozor->ui->pushButton->setText("Log out");
 }
 void logoutWolk()
 {
@@ -192,7 +210,7 @@ void getDevices()
 
     prozor->ui->deviceCombo->setPlaceholderText("Click to see devices");
     std::string url = "https://api-demo.wolkabout.com/api/devices/";
-    std::string received =  get(&url[0]);
+    std::string received = get(&url[0]);
 
     //parse device name out of response
     QString deviceName;
